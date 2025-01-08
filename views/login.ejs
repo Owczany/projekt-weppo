@@ -82,6 +82,9 @@
 
             <button type="submit">Login</button>
         </form>
+        <% if (error) { %>
+            <div class="error"><%= error %></div>
+        <% } %>
     </div>
 
     <script>
