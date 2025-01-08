@@ -5,6 +5,8 @@ var fs = require('fs');
 var path = require('path');
 var app = express();
 
+// TODO 
+// Kornel: login i rola przekazywana w ciastku zamiast parametrów strony
 
 app.set('view engine', 'ejs');
 app.set('views', './views');
@@ -36,7 +38,7 @@ app.post('/login', (req, res) => {
     const user = validateUser(username, password);
 
     if (user) {
-        res.redirect(`/?login=${user.login}&role=${user.role}`);
+        res.redirect(`/?login=${user.login}`); 
     } else {
         res.render('login', { error: 'User does not exist!' });
     }
