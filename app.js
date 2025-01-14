@@ -53,7 +53,6 @@ app.post('/login', (req, res) => {
 app.post("/register", (req, res) => {
     const { email, username, password, confirmPassword } = req.body;
 
-    // Walidacja - sprawdzenie zgodności haseł
     if (password !== confirmPassword) {
         return res.render("register", { 
             error : "Passwords do not match", 
@@ -62,7 +61,6 @@ app.post("/register", (req, res) => {
         });
     }
 
-    // Sprawdzenie czy użytkownik już istnieje
     const filePath = path.join(__dirname, 'prototype.csv');
     const data = fs.readFileSync(filePath, 'utf8').split('\n').map(line => line.split(' '));
 
@@ -75,11 +73,9 @@ app.post("/register", (req, res) => {
         });
     }
 
-    // Zapisanie nowego użytkownika
     const newUser = `${username} ${password} user\n`;
     fs.appendFileSync(filePath, newUser);
 
-    // Sukces - przekierowanie na stronę logowania
     res.redirect("/login");
 });
 
