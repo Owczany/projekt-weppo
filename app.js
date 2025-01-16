@@ -3,15 +3,16 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var fs = require('fs');
 var path = require('path');
+var cookieParser = require('cookie-parser'); 
 var app = express();
 
-// TODO 
-// Kornel: login i rola przekazywana w ciastku zamiast parametrów strony
+
 
 app.set('view engine', 'ejs');
 app.set('views', './views');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); 
 
 function validateUser(login, password) {
     const data = fs.readFileSync(path.join(__dirname, 'prototype.csv'), 'utf8');
@@ -27,9 +28,12 @@ function validateUser(login, password) {
 }
 
 app.get('/', (req, res) => {
-    const { login, role } = req.query;
-    res.send(`Welcome ${login}! Your role is ${role}.`);
-});
+    const { login, role } = req.cookies;
+    if (login && role) {
+        res.send(`Welcome ${login}! Your role is ${role}.`);
+    } else {
+        res.redirect('/login');
+    }});
 
 app.get('/login', (req, res) => {
     res.render('login', { error : null });
@@ -44,7 +48,9 @@ app.post('/login', (req, res) => {
     const user = validateUser(username, password);
 
     if (user) {
-        res.redirect(`/?login=${user.login}&role=${user.role}`); 
+        res.cookie('login', user.login, { httpOnly: true }); 
+        res.cookie('role', user.role, { httpOnly: true });  
+        res.redirect('/');    
     } else {
         res.render('login', { error: 'User does not exist!' });
     }
