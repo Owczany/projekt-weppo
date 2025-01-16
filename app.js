@@ -3,7 +3,8 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var fs = require('fs');
 var path = require('path');
-var cookieParser = require('cookie-parser'); 
+var cookieParser = require('cookie-parser');
+var bcrypt = require('bcrypt'); 
 var app = express();
 
 
@@ -19,7 +20,7 @@ function validateUser(login, password) {
     const lines = data.split('\n');
     for (const line of lines) {
       const [storedLogin, storedPassword, role] = line.split(' ');
-      if (storedLogin === login && storedPassword === password) {
+      if (storedLogin === login && bcrypt.compareSync(password, storedPassword)) {
         return { login: storedLogin, 
                  role : role };
       }
@@ -56,7 +57,7 @@ app.post('/login', (req, res) => {
     }
 });
 
-app.post("/register", (req, res) => {
+app.post("/register", async (req, res) => {
     const { email, username, password, confirmPassword } = req.body;
 
     if (password !== confirmPassword) {
@@ -90,12 +91,21 @@ app.post("/register", (req, res) => {
         });
     }
 
-    const newUser = `${username} ${password} user\n`;
-    const newUserMail = `${username} ${email}\n`;
-    fs.appendFileSync(filePath, newUser);
-    fs.appendFileSync(filePathMails, newUserMail);
-
-    res.redirect("/login");
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10); // Szyfrowanie hasła z salą (10 rund)
+        const newUser = `${username} ${hashedPassword} user\n`;
+        fs.appendFileSync(filePath, newUser);
+        const newUserMail = `${username} ${email}\n`;
+        fs.appendFileSync(filePathMails, newUserMail);
+        res.redirect("/login");
+    } catch (error) {
+        console.error("Error hashing password:", error);
+        res.render("register", {
+            error: "An error occurred during registration. Please try again.",
+            email: email,
+            username: username
+        });
+    }
 });
 
 
