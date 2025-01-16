@@ -15,7 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); 
 
 function validateUser(login, password) {
-    const data = fs.readFileSync(path.join(__dirname, 'prototype.csv'), 'utf8');
+    const data = fs.readFileSync(path.join(__dirname, 'user-password-role.csv'), 'utf8');
     const lines = data.split('\n');
     for (const line of lines) {
       const [storedLogin, storedPassword, role] = line.split(' ');
@@ -67,8 +67,10 @@ app.post("/register", (req, res) => {
         });
     }
 
-    const filePath = path.join(__dirname, 'prototype.csv');
+    const filePath = path.join(__dirname, 'user-password-role.csv');
+    const filePathMails = path.join(__dirname, 'user-mail.csv');
     const data = fs.readFileSync(filePath, 'utf8').split('\n').map(line => line.split(' '));
+    const dataMail = fs.readFileSync(filePathMails, 'utf8').split('\n').map(line => line.split(' '));
 
     const userExists = data.some(([existingUsername]) => existingUsername === username);
     if (userExists) {
@@ -79,8 +81,19 @@ app.post("/register", (req, res) => {
         });
     }
 
+    const mailExists = dataMail.some(([_, existingMail]) => existingMail === email);
+    if (mailExists) {
+        return res.render("register", { 
+            error : "This email adress is already taken",
+            email : email,
+            username : username
+        });
+    }
+
     const newUser = `${username} ${password} user\n`;
+    const newUserMail = `${username} ${email}\n`;
     fs.appendFileSync(filePath, newUser);
+    fs.appendFileSync(filePathMails, newUserMail);
 
     res.redirect("/login");
 });
