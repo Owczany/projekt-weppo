@@ -1,0 +1,61 @@
+<!-- element.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertical Badge</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+
+        .badge {
+            width: 200px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .badge img {
+            width: 100%;
+            height: auto;
+        }
+
+        .badge .details {
+            padding: 10px;
+        }
+
+        .badge .details .name {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin: 0;
+            color: #333;
+        }
+
+        .badge .details .price {
+            color: #e63946;
+            font-size: 1em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="badge">
+        <img src="https://www.motortrend.com/uploads/sites/10/2023/10/2024-bmw-8-series-840i-gran-coupe-4wd-sedan-angular-front.png?w=768&width=768&q=75&format=webp" alt="Placeholder Image">
+        <div class="details">
+            <p class="name">Sample Product</p>
+            <p class="price">$19.99</p>
+        </div>
+    </div>
+</body>
+</html>
