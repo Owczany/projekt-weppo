@@ -1,9 +1,9 @@
 ## Projekt Weppo
 # Sklep Elektroniczny
 
-# Udziałowcy
+# Współtwórcy
 Piotr Pijanowski 346952
 
-Mikołaj Mężyk
+Mikołaj Mężyk 345125
 
 Kornel Orawczak
