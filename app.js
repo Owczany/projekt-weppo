@@ -4,7 +4,8 @@ var bodyParser = require('body-parser');
 var fs = require('fs');
 var path = require('path');
 var cookieParser = require('cookie-parser');
-var bcrypt = require('bcrypt'); 
+const { error } = require('console');
+// var bcrypt = require('bcrypt'); 
 var app = express();
 
 
@@ -35,6 +36,11 @@ app.get('/', (req, res) => {
     } else {
         res.redirect('/login');
     }});
+
+// Testowow do sprawdzania widoków
+app.get('/shop', (req, res) => {
+    res.render('shop_page', { error: null })
+});
 
 app.get('/login', (req, res) => {
     res.render('login', { error : null });
@@ -92,7 +98,8 @@ app.post("/register", async (req, res) => {
     }
 
     try {
-        const hashedPassword = await bcrypt.hash(password, 10); // Szyfrowanie hasła z salą (10 rund)
+        // const hashedPassword = await bcrypt.hash(password, 10); // Szyfrowanie hasła z salą (10 rund)
+        const hashedPassword = password // Szyfrowanie hasła z salą (10 rund)
         const newUser = `${username} ${hashedPassword} user\n`;
         fs.appendFileSync(filePath, newUser);
         const newUserMail = `${username} ${email}\n`;
