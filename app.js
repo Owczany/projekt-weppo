@@ -2,11 +2,14 @@ import http from 'http';
 import express from 'express';
 import bodyParser from 'body-parser';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import path from 'path';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
 import bcrypt from 'bcrypt';
 import { error } from 'console';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Inicjalizacja Express
 const app = express();
@@ -104,9 +107,9 @@ app.get('/register', (req, res) => {
     res.render('register', { error: null, email: null, username: null });
 })
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { username, password } = req.body;
-    const user = validateUser(username, password);
+    const user = await validateUser(username, password);
 
     if (user) {
         res.cookie('login', user.login, { httpOnly: true });
