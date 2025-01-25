@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
-// import bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 import { error } from 'console';
 
 // Inicjalizacja Express
@@ -25,14 +25,34 @@ const userSchema = new mongoose.Schema({
 })
 
 const prodcutSchema = new mongoose.Schema({
+    id: Number,
     name: String,
     description: String,
     photo: String,
     price: Number,
 })
 
+const orderSchema = new mongoose.Schema({
+    id: Number,
+    userID: Number,
+
+})
+
 const User = mongoose.model('User', userSchema);
 const Product = mongoose.model('Product', prodcutSchema);
+const Order = mongoose.model('Order', orderSchema);
+
+async function getProducts() {
+    try {
+        const products = await Product.find(); // Pobranie wszystkich dokumentów z kolekcji `products`
+        return products; // Zwraca tablicę produktów
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        return []; // Zwraca pustą tablicę w przypadku błędu
+    }
+}
+
+
 
 async function registerNewUser(username, email, password, role) {
     const user = new User({ username: username, email: email, password: password, role: role });
@@ -46,7 +66,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-function validateUser(login, password) {
+async function validateUser(login, password) {
+    // const data = await User.findOne();
     const data = fs.readFileSync(path.join(__dirname, 'user-password-role.csv'), 'utf8');
     const lines = data.split('\n');
     for (const line of lines) {
@@ -131,8 +152,8 @@ app.post("/register", async (req, res) => {
     }
 
     try {
-        // const hashedPassword = await bcrypt.hash(password, 10); // Szyfrowanie hasła z salą (10 rund)
-        const hashedPassword = password // Szyfrowanie hasła z salą (10 rund)
+        const hashedPassword = await bcrypt.hash(password, 10); // Szyfrowanie hasła z salą (10 rund)
+        // const hashedPassword = password // Szyfrowanie hasła z salą (10 rund)
         const newUser = `${username} ${hashedPassword} user\n`;
         fs.appendFileSync(filePath, newUser);
         const newUserMail = `${username} ${email}\n`;
@@ -148,7 +169,8 @@ app.post("/register", async (req, res) => {
     }
 });
 
-
 http.createServer(app).listen(3000);
 console.log("started");
 
+// monogod --dbpath TwojaKolekcja
+// monogosh
