@@ -11,12 +11,16 @@ import { error } from 'console';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Inicjalizacja Express
 const app = express();
+app.set('view engine', 'ejs');
+app.set('views', './views');
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 mongoose.connect('mongodb://127.0.0.1:27017/sklep', {
     useNewUrlParser: true,
-    useUnifiedTopology: true, // Poprawiono literówkę
+    useUnifiedTopology: true, 
 }).then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
@@ -47,11 +51,11 @@ const Order = mongoose.model('Order', orderSchema);
 
 async function getProducts() {
     try {
-        const products = await Product.find(); // Pobranie wszystkich dokumentów z kolekcji `products`
-        return products; // Zwraca tablicę produktów
+        const products = await Product.find(); 
+        return products; 
     } catch (error) {
         console.error('Error fetching products:', error);
-        return []; // Zwraca pustą tablicę w przypadku błędu
+        return []; 
     }
 }
 
@@ -63,11 +67,6 @@ async function registerNewUser(username, email, password, role) {
     console.log('User added:', user);
 }
 
-app.set('view engine', 'ejs');
-app.set('views', './views');
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 
 async function validateUser(login, password) {
     // const data = await User.findOne();
@@ -88,13 +87,24 @@ async function validateUser(login, password) {
 app.get('/', (req, res) => {
     const { login, role } = req.cookies;
     if (login && role) {
-        res.send(`Welcome ${login}! Your role is ${role}.`);
+        //res.send(`Welcome ${login}! Your role is ${role}.`);
+        res.render('shop_page', { error: null, admin : role === "admin" })
     } else {
         res.redirect('/login');
     }
 });
 
-// Testowow do sprawdzania widoków
+app.get('/admin', (req, res) => { 
+    const { login, role } = req.cookies;
+    if (role !== "admin") {
+        res.send("Nie masz wystarczających uprawnień!");
+    }
+    else {
+        res.render("admin_products");
+    }
+})
+
+// Testy do sprawdzania widoków
 app.get('/shop', (req, res) => {
     res.render('shop_page', { error: null })
 });
