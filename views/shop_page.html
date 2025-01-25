@@ -80,6 +80,13 @@
             border-radius: 4px;
         }
 
+        .cart-icon button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
         .product-container {
             display: grid;
             gap: 20px;
@@ -108,7 +115,7 @@
     <div class="header">
         <div class="search-bar">
             <input type="text" placeholder="Search...">
-            <button><i class="fa fa-search">🔍</i></button>
+            <button><i class="loupe-search">🔍</i></button>
         </div>
         <div class="sort-bar">
             <select>
@@ -116,8 +123,16 @@
                 <option value="descending">Price: High to Low</option>
             </select>
         </div>
+        <div class="cart-icon">
+            <a href="shopping-card.html">
+                <button type="button">
+                    🛒
+                </button>
+            </a>
+        </div>
+        <button type="button">Zaloguj się</button>
     </div>
-
+    <!--Tutaj są tylko na sztywno plakietki które się potem wywali-->
     <div class="product-container multi-column">
         <div class="badge">
             <img src="https://www.motortrend.com/uploads/sites/10/2023/10/2024-bmw-8-series-840i-gran-coupe-4wd-sedan-angular-front.png?w=768&width=768&q=75&format=webp" alt="Placeholder Image">
@@ -211,7 +226,6 @@
     </div>
 
     <script>
-        // Optional: Adjust class based on screen width dynamically
         const productContainer = document.querySelector('.product-container');
         function adjustLayout() {
             if (window.innerWidth <= 500) {
