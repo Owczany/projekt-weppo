@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        .form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        .form-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-container input, .form-container textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .form-container button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Dodaj produkt</h2>
+        <form action="/submit-product" method="POST" enctype="multipart/form-data">
+            <label for="product-name">Nazwa</label>
+            <input type="text" id="product-name" name="product-name" placeholder="Podaj nazwę produktu" required>
+
+            <label for="price">Cena</label>
+            <input type="number" id="price" name="price" placeholder="Podaj cenę produktu" step="0.01" required>
+
+            <label for="description">Opis</label>
+            <textarea id="description" name="description" placeholder="Podaj opis produktu" rows="4" required></textarea>
+
+            <label for="product-image">Zdjęcie produktu</label>
+            <input type="file" id="product-image" name="product-image" accept="image/*" required>
+
+            <button type="submit">Dodaj produkt</button>
+        </form>
+    </div>
+</body>
+</html>
