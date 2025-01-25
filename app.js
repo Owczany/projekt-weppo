@@ -24,7 +24,15 @@ const userSchema = new mongoose.Schema({
     role: String,
 })
 
+const prodcutSchema = new mongoose.Schema({
+    name: String,
+    description: String,
+    photo: String,
+    price: Number,
+})
+
 const User = mongoose.model('User', userSchema);
+const Product = mongoose.model('Product', prodcutSchema);
 
 async function registerNewUser(username, email, password, role) {
     const user = new User({ username: username, email: email, password: password, role: role });
