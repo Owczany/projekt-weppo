@@ -18,18 +18,19 @@ mongoose.connect('mongodb://127.0.0.1:27017/sklep', {
     .catch(err => console.error('MongoDB connection error:', err));
 
 const userSchema = new mongoose.Schema({
-    name: String
+    username: String,
+    email: String,
+    password: String,
+    role: String,
 })
 
 const User = mongoose.model('User', userSchema);
 
-async function addUser() {
-    const user = new User({ name: 'John' });
+async function registerNewUser(username, email, password, role) {
+    const user = new User({ username: username, email: email, password: password, role: role });
     await user.save();
     console.log('User added:', user);
 }
-
-await addUser();
 
 app.set('view engine', 'ejs');
 app.set('views', './views');
