@@ -100,7 +100,37 @@ app.get('/admin', (req, res) => {
         res.send("Nie masz wystarczających uprawnień!");
     }
     else {
+        res.render("admin");
+    }
+})
+
+app.get('/admin/products', (req, res) => { 
+    const { login, role } = req.cookies;
+    if (role !== "admin") {
+        res.send("Nie masz wystarczających uprawnień!");
+    }
+    else {
         res.render("admin_products");
+    }
+})
+
+app.get('/admin/users', (req, res) => { 
+    const { login, role } = req.cookies;
+    if (role !== "admin") {
+        res.send("Nie masz wystarczających uprawnień!");
+    }
+    else {
+        res.send("Work in progress...");
+    }
+})
+
+app.get('/admin/baskets', (req, res) => { 
+    const { login, role } = req.cookies;
+    if (role !== "admin") {
+        res.send("Nie masz wystarczających uprawnień!");
+    }
+    else {
+        res.send("Work in progress...");
     }
 })
 
