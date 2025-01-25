@@ -1,30 +1,53 @@
-var http = require('http');
-var express = require('express');
-var bodyParser = require('body-parser');
-var fs = require('fs');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-const { error } = require('console');
-// var bcrypt = require('bcrypt'); 
-var app = express();
+import http from 'http';
+import express from 'express';
+import bodyParser from 'body-parser';
+import fs from 'fs';
+import path from 'path';
+import mongoose from 'mongoose';
+import cookieParser from 'cookie-parser';
+// import bcrypt from 'bcrypt';
+import { error } from 'console';
 
+// Inicjalizacja Express
+const app = express();
 
+mongoose.connect('mongodb://127.0.0.1:27017/sklep', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true, // Poprawiono literówkę
+}).then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error:', err));
+
+const userSchema = new mongoose.Schema({
+    name: String
+})
+
+const User = mongoose.model('User', userSchema);
+
+async function addUser() {
+    const user = new User({ name: 'John' });
+    await user.save();
+    console.log('User added:', user);
+}
+
+await addUser();
 
 app.set('view engine', 'ejs');
 app.set('views', './views');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); 
+app.use(cookieParser());
 
 function validateUser(login, password) {
     const data = fs.readFileSync(path.join(__dirname, 'user-password-role.csv'), 'utf8');
     const lines = data.split('\n');
     for (const line of lines) {
-      const [storedLogin, storedPassword, role] = line.split(' ');
-      if (storedLogin === login && bcrypt.compareSync(password, storedPassword)) {
-        return { login: storedLogin, 
-                 role : role };
-      }
+        const [storedLogin, storedPassword, role] = line.split(' ');
+        if (storedLogin === login && bcrypt.compareSync(password, storedPassword)) {
+            return {
+                login: storedLogin,
+                role: role
+            };
+        }
     }
     return null;
 }
@@ -35,7 +58,8 @@ app.get('/', (req, res) => {
         res.send(`Welcome ${login}! Your role is ${role}.`);
     } else {
         res.redirect('/login');
-    }});
+    }
+});
 
 // Testowow do sprawdzania widoków
 app.get('/shop', (req, res) => {
@@ -43,11 +67,11 @@ app.get('/shop', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    res.render('login', { error : null });
+    res.render('login', { error: null });
 });
 
 app.get('/register', (req, res) => {
-    res.render('register', { error : null, email : null, username : null });
+    res.render('register', { error: null, email: null, username: null });
 })
 
 app.post('/login', (req, res) => {
@@ -55,9 +79,9 @@ app.post('/login', (req, res) => {
     const user = validateUser(username, password);
 
     if (user) {
-        res.cookie('login', user.login, { httpOnly: true }); 
-        res.cookie('role', user.role, { httpOnly: true });  
-        res.redirect('/');    
+        res.cookie('login', user.login, { httpOnly: true });
+        res.cookie('role', user.role, { httpOnly: true });
+        res.redirect('/');
     } else {
         res.render('login', { error: 'User does not exist!' });
     }
@@ -67,10 +91,10 @@ app.post("/register", async (req, res) => {
     const { email, username, password, confirmPassword } = req.body;
 
     if (password !== confirmPassword) {
-        return res.render("register", { 
-            error : "Passwords do not match", 
-            email : email, 
-            username : username 
+        return res.render("register", {
+            error: "Passwords do not match",
+            email: email,
+            username: username
         });
     }
 
@@ -81,19 +105,19 @@ app.post("/register", async (req, res) => {
 
     const userExists = data.some(([existingUsername]) => existingUsername === username);
     if (userExists) {
-        return res.render("register", { 
-            error: "Username is already taken", 
-            email : email, 
-            username : username 
+        return res.render("register", {
+            error: "Username is already taken",
+            email: email,
+            username: username
         });
     }
 
     const mailExists = dataMail.some(([_, existingMail]) => existingMail === email);
     if (mailExists) {
-        return res.render("register", { 
-            error : "This email adress is already taken",
-            email : email,
-            username : username
+        return res.render("register", {
+            error: "This email adress is already taken",
+            email: email,
+            username: username
         });
     }
 
@@ -118,3 +142,4 @@ app.post("/register", async (req, res) => {
 
 http.createServer(app).listen(3000);
 console.log("started");
+
