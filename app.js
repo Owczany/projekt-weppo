@@ -69,7 +69,7 @@ app.use(cookieParser());
 async function validateUser(login, password) {
     try {
         // Znajdź użytkownika w MongoDB po loginie
-        const user = await User.findOne({ login });
+        const user = await User.findOne({ username: login });
 
         // Jeśli użytkownik nie istnieje, zwróć null
         if (!user) {
@@ -81,12 +81,13 @@ async function validateUser(login, password) {
 
         // Jeśli hasło jest nieprawidłowe, zwróć null
         if (!isPasswordValid) {
+            console.log('Niepoprawne hasło logowania')
             return null;
         }
 
         // Zwróć informacje o użytkowniku (login i rola)
         return {
-            login: user.login,
+            login: user.username,
             role: user.role
         };
     } catch (error) {
@@ -165,18 +166,30 @@ app.get('/register', (req, res) => {
     res.render('register', { error: null, email: null, username: null });
 })
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { username, password } = req.body;
-    const user = validateUser(username, password);
 
-    if (user) {
-        res.cookie('login', user.login, { httpOnly: true });
-        res.cookie('role', user.role, { httpOnly: true });
-        res.redirect('/');
-    } else {
-        res.render('login', { error: 'User does not exist!' });
+    try {
+        // Poczekaj na wynik walidacji użytkownika
+        const user = await validateUser(username, password);
+        console.log(user)
+
+        if (user) {
+            // Ustawienie ciasteczek
+            res.cookie('login', user.login, { httpOnly: true });
+            res.cookie('role', user.role, { httpOnly: true });
+            res.redirect('/');
+        } else {
+            // Wyświetlenie błędu w przypadku niepoprawnych danych logowania
+            res.render('login', { error: 'Invalid username or password!' });
+        }
+    } catch (error) {
+        // Obsługa błędów
+        console.error('Error during login:', error);
+        res.render('login', { error: 'An error occurred during login. Please try again.' });
     }
 });
+
 
 
 app.post("/register", async (req, res) => {
