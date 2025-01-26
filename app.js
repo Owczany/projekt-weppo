@@ -121,7 +121,7 @@ async function seedProducts() {
             price: 75000,
         },
         {
-            id: 2,
+            id: 3,
             name: "Audi A6",
             description: "High-performance car with a sleek finish.",
             photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT50K1eGe2rWpcLD5pF57zLFyfnkkrF_UqX7w&s",
@@ -137,26 +137,48 @@ async function seedProducts() {
     }
 }
 
+seedProducts();
+
 
 app.get('/shop', async (req, res) => {
     try {
-        const searchQuery = req.query.search || ''; // Pobierz parametr wyszukiwania z zapytania
-        const regex = new RegExp(searchQuery, 'i'); // Stwórz wyrażenie regularne ignorujące wielkość liter
+        const searchQuery = req.query.search || ''; // Pobierz parametr wyszukiwania
+        const sortQuery = req.query.sort || ''; // Pobierz parametr sortowania
+        const regex = new RegExp(searchQuery, 'i'); // Wyrażenie regularne do wyszukiwania
+        const sortOption = sortQuery === 'ascending' ? { price: 1 } : sortQuery === 'descending' ? { price: -1 } : {};
+
+        // Znajdź produkty, które pasują do wyszukiwania, i posortuj je
         const products = await Product.find({
             $or: [
                 { name: regex },
                 { description: regex }
             ]
-        }); // Szukaj w nazwie lub opisie produktów
+        }).sort(sortOption);
 
         const { login } = req.cookies; // Pobierz login użytkownika z ciasteczek
-        res.render('shop_page', { products, login }); // Przekazanie produktów i loginu do widoku
+        res.render('shop_page', { products, login, search: searchQuery, sort: sortQuery }); // Przekaż dane do widoku
     } catch (error) {
         console.error('Error fetching products:', error);
         res.status(500).send('Error fetching products');
     }
 });
 
+
+app.get('/product/:id', async (req, res) => {
+    try {
+        const productId = req.params.id; // Pobierz ID produktu z URL
+        const product = await Product.findOne({ id: productId }); // Znajdź produkt w bazie danych
+
+        if (!product) {
+            return res.status(404).send('Produkt nie został znaleziony');
+        }
+
+        res.render('product_page', { product }); // Przekaż dane produktu do widoku
+    } catch (error) {
+        console.error('Błąd podczas ładowania produktu:', error);
+        res.status(500).send('Wystąpił błąd podczas ładowania produktu.');
+    }
+});
 
 app.get('/login', (req, res) => {
     res.render('login', { error: null });
@@ -190,7 +212,11 @@ app.post('/login', async (req, res) => {
     }
 });
 
-
+app.post('/logout', (req, res) => {
+    res.clearCookie('login'); // Usuwa ciasteczko login
+    res.clearCookie('role'); // Usuwa ciasteczko rola
+    res.redirect('/shop'); // Przekierowanie na stronę sklepu
+});
 
 app.post("/register", async (req, res) => {
     const { email, username, password, confirmPassword } = req.body;

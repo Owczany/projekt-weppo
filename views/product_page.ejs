@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Produkt</title>
+    <title><%= product.name %></title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -82,18 +82,18 @@
 </head>
 <body>
     <header>
-        <a href="shop_page.html">Wróć do strony głównej</a>
+        <a href="/shop">Wróć do strony głównej</a>
     </header>
 
     <div class="product">
-        <img src="https://www.motortrend.com/uploads/sites/10/2023/10/2024-bmw-8-series-840i-gran-coupe-4wd-sedan-angular-front.png?w=768&width=768&q=75&format=webp" alt="Zdjęcie produktu">
-        <h2>Nazwa Produktu</h2>
-        <p>Cena: 199,99 zł</p>
+        <img src="<%= product.photo %>" alt="<%= product.name %>">
+        <h2><%= product.name %></h2>
+        <p>Cena: $<%= product.price.toFixed(2) %></p>
 
         <div class="expandable">
             <button onclick="toggleDescription()">Pokaż opis produktu</button>
             <div class="expandable-content" id="description">
-                <p>To jest szczegółowy opis produktu. Produkt jest wysokiej jakości, zaprojektowany z myślą o użytkownikach. Idealny do codziennego użytku.</p>
+                <p><%= product.description %></p>
             </div>
         </div>
 
