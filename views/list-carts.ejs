@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All User Baskets</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+        img {
+            max-width: 50px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/">Strona główna</a>
+        <a href="/admin">Panel administratora</a>
+    </header>
+    <h1>Wszystkie koszyki i zamówienia</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Product</th>
+                <th>Image</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% carts.forEach(cart => { %>
+                <tr>
+                    <td><%= cart.username %></td>
+                    <td><%= cart.product ? cart.product.name : 'Unknown Product' %></td>
+                    <td>
+                        <% if (cart.product && cart.product.photo) { %>
+                            <img src="<%= cart.product.photo %>" alt="Product Image">
+                        <% } else { %>
+                            N/A
+                        <% } %>
+                    </td>
+                    <td><%= cart.status %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</body>
+</html>

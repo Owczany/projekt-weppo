@@ -43,6 +43,8 @@ app.use('/uploads', express.static('uploads'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(express.json());
+
 
 mongoose.connect('mongodb://127.0.0.1:27017/sklep', {
     useNewUrlParser: true,
@@ -250,13 +252,40 @@ app.post('/admin/products/:id/delete', async (req, res) => {
 
 
 
-app.get('/admin/baskets', (req, res) => { 
+app.get('/admin/baskets', async (req, res) => { 
     const { login, role } = req.cookies;
     if (role !== "ADMIN") {
         res.send("Nie masz wystarczających uprawnień!");
     }
     else {
-        res.send("Work in progress...");
+        try {
+            // Fetch all carts from the database
+            const carts = await Cart.find();
+    
+            // Fetch all products from the database to map their details
+            const products = await Product.find();
+    
+            // Create a map of productID to product details for easy lookup
+            const productMap = products.reduce((map, product) => {
+                map[product.id] = product;
+                return map;
+            }, {});
+    
+            // Map carts with product details
+            const cartsWithProductDetails = carts.map(cart => {
+                return {
+                    username: cart.username,
+                    status: cart.status,
+                    product: productMap[cart.productID] || null // Attach product details or null
+                };
+            });
+    
+            // Render the list-carts.ejs view with the mapped data
+            res.render('list-carts', { carts: cartsWithProductDetails });
+        } catch (error) {
+            console.error('Error fetching carts or products:', error);
+            res.status(500).send('Internal server error');
+        }
     }
 })
 
@@ -361,9 +390,7 @@ app.get('/shopping-cart', async (req, res) => {
 
 
 app.post('/cart/add', async (req, res) => {
-    console.log('Otrzymane dane:', req.body); // Sprawdź, co dokładnie jest odbierane w req.body
     const { productId } = req.body;
-    console.log('Otrzymane productId:', productId); // Sprawdź, czy productId jest undefined
 
     const { login } = req.cookies;
 
