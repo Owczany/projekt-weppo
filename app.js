@@ -137,7 +137,7 @@ async function seedProducts() {
     }
 }
 
-seedProducts();
+
 
 
 app.get('/shop', async (req, res) => {
@@ -173,12 +173,14 @@ app.get('/product/:id', async (req, res) => {
             return res.status(404).send('Produkt nie został znaleziony');
         }
 
-        res.render('product_page', { product }); // Przekaż dane produktu do widoku
+        const { login } = req.cookies; // Pobierz login z ciasteczek
+        res.render('product_page', { product, login }); // Przekaż dane produktu i login do widoku
     } catch (error) {
         console.error('Błąd podczas ładowania produktu:', error);
         res.status(500).send('Wystąpił błąd podczas ładowania produktu.');
     }
 });
+
 
 app.get('/login', (req, res) => {
     res.render('login', { error: null });

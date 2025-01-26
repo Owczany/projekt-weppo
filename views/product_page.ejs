@@ -97,9 +97,13 @@
             </div>
         </div>
 
-        <div class="add-to-cart">
-            <button onclick="addToCart()">Do koszyka</button>
-        </div>
+        <% if (login) { %> <!-- Sprawdzenie, czy użytkownik jest zalogowany -->
+            <div class="add-to-cart">
+                <button onclick="addToCart()">Do koszyka</button>
+            </div>
+        <% } else { %>
+            <p>Musisz się zalogować, aby dodać produkt do koszyka.</p>
+        <% } %>
     </div>
 
     <script>
