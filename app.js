@@ -95,19 +95,32 @@ async function registerNewUser(username, email, password, role) {
 
 
 async function validateUser(login, password) {
-    // const data = await User.findOne();
-    const data = fs.readFileSync(path.join(__dirname, 'user-password-role.csv'), 'utf8');
-    const lines = data.split('\n');
-    for (const line of lines) {
-        const [storedLogin, storedPassword, role] = line.split(' ');
-        if (storedLogin === login && bcrypt.compareSync(password, storedPassword)) {
-            return {
-                login: storedLogin,
-                role: role
-            };
+    // const data = fs.readFileSync(path.join(__dirname, 'user-password-role.csv'), 'utf8');
+    // const lines = data.split('\n');
+    // for (const line of lines) {
+    //     const [storedLogin, storedPassword, role] = line.split(' ');
+    //     if (storedLogin === login && bcrypt.compareSync(password, storedPassword)) {
+    //         return {
+    //             login: storedLogin,
+    //             role: role
+    //         };
+    //     }
+    // }
+    // return null;
+
+    try {
+        const user = await User.findOne({ username : login })
+        if (!user) return null;
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) return null;
+        return {
+            login : user.username,
+            role : user.role
         }
+    } catch (error) {
+        console.log("Błąd podczas walidacji użytkownika: ", error);
+        throw new Error("Błąd walidacji użytkownika");
     }
-    return null;
 }
 
 app.get('/', (req, res) => {
@@ -235,49 +248,45 @@ app.post("/register", async (req, res) => {
         });
     }
 
-    const filePath = path.join(__dirname, 'user-password-role.csv');
-    const filePathMails = path.join(__dirname, 'user-mail.csv');
-    const data = fs.readFileSync(filePath, 'utf8').split('\n').map(line => line.split(' '));
-    const dataMail = fs.readFileSync(filePathMails, 'utf8').split('\n').map(line => line.split(' '));
-
-    const userExists = data.some(([existingUsername]) => existingUsername === username);
-    if (userExists) {
-        return res.render("register", {
-            error: "Username is already taken",
-            email: email,
-            username: username
-        });
-    }
-
-    const mailExists = dataMail.some(([_, existingMail]) => existingMail === email);
-    if (mailExists) {
-        return res.render("register", {
-            error: "This email adress is already taken",
-            email: email,
-            username: username
-        });
-    }
-
     try {
-        const hashedPassword = await bcrypt.hash(password, 10); // Szyfrowanie hasła z salą (10 rund)
-        // const hashedPassword = password // Szyfrowanie hasła z salą (10 rund)
-        const newUser = `${username} ${hashedPassword} user\n`;
-        fs.appendFileSync(filePath, newUser);
-        const newUserMail = `${username} ${email}\n`;
-        fs.appendFileSync(filePathMails, newUserMail);
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.render("register", {
+                error: "This email is already registered",
+                email,
+                username
+            });
+        }
+        const existingUsername = await User.findOne({ username });
+        if (existingUsername) {
+            return res.render("register", {
+                error: "Username is already taken",
+                email,
+                username
+            });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({
+            email,
+            username,
+            password: hashedPassword,
+            role: "user"
+        });
+
+        await newUser.save();
+
         res.redirect("/login");
     } catch (error) {
-        console.error("Error hashing password:", error);
+        console.error("Error during registration:", error);
         res.render("register", {
             error: "An error occurred during registration. Please try again.",
-            email: email,
-            username: username
+            email,
+            username
         });
     }
 });
 
 http.createServer(app).listen(3000);
-console.log(await getProducts());
 console.log("started");
 
 // monogod --dbpath TwojaKolekcja
