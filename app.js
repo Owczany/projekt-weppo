@@ -3,7 +3,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import fs from 'fs';
 import path from 'path';
-import mongoose from 'mongoose';
+import mongoose, { mongo } from 'mongoose';
 import cookieParser from 'cookie-parser';
 import bcrypt from 'bcryptjs';
 import { error } from 'console';
@@ -13,33 +13,46 @@ const app = express();
 
 mongoose.connect('mongodb://127.0.0.1:27017/sklep', {
     useNewUrlParser: true,
-    useUnifiedTopology: true, // Poprawiono literówkę
+    useUnifiedTopology: true,
 }).then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
+// Kolekcja users 
 const userSchema = new mongoose.Schema({
     username: String,
     email: String,
     password: String,
     role: String,
-})
+});
 
-const prodcutSchema = new mongoose.Schema({
+// Kolekcja products
+const productSchema = new mongoose.Schema({
     id: Number,
     name: String,
     description: String,
     photo: String,
     price: Number,
-})
+});
 
+// Kolekcja carts
+const cartSchema = new mongoose.Schema({
+    username: String,
+    productID: Number,
+    quantity: Number,
+});
+
+// Kolekcja orders
 const orderSchema = new mongoose.Schema({
     id: Number,
-    userID: Number,
-
-})
+    username: String,
+    productID: Number,
+    quantity: Number,
+    status: String,
+});
 
 const User = mongoose.model('User', userSchema);
-const Product = mongoose.model('Product', prodcutSchema);
+const Product = mongoose.model('Product', productSchema);
+const Cart = mongoose.model('Cart', cartSchema)
 const Order = mongoose.model('Order', orderSchema);
 
 async function getProducts() {
@@ -105,6 +118,55 @@ app.get('/', (req, res) => {
     }
 });
 
+app.get('/add-product', (req, res) => {
+    const { login, role } = req.cookies;
+    if (login && role === 'ADMIN') {
+        res.render('add-product');
+    } else {
+        res.redirect('/login');
+    }
+});
+
+// Jak ma przbiegać renderowanie shopping card
+app.get('/shopping-cart', async (req, res) => {
+    const { login, role } = req.cookies;
+    if (login && role) {
+        try {
+            const carts = await Cart.find({ username: login });
+            const products = []
+            for (const cart of carts) {
+                let product = await Product.findOne({id: cart.productID});
+                console.log(product)
+                products.push(product)
+            }
+
+            res.render('shopping-cart', { login, products, carts });
+        } catch (err) {
+            console.error(err)
+        }
+    } else {
+        res.redirect('/login');
+    }
+});
+
+// Usuwanie produktu z koszyka
+app.post('/shopping-cart/delete', async (req, res) => {
+    const { id } = req.body;
+
+    if (!id) return res.status(400).send({ message: 'ID nie zostało podane.' });
+
+    try {
+        const result = await Cart.findByIdAndDelete(id);
+        if (!result) return res.status(404).send({ message: 'Produkt nie został znaleziony.' });
+
+        res.status(200).send({ message: 'Produkt został usunięty z koszyka.' });
+    } catch (error) {
+        console.error('Error deleting cart item:', error);
+        res.status(500).send({ message: 'Wystąpił błąd podczas usuwania produktu.' });
+    }
+});
+
+
 // Testowow do sprawdzania widoków
 // app.get('/shop', (req, res) => {    
 //     const { login } = req.cookies; // Pobierz login z ciasteczek
@@ -136,7 +198,6 @@ async function seedProducts() {
         console.error('Error adding sample products:', error);
     }
 }
-
 
 app.get('/shop', async (req, res) => {
     try {
@@ -190,8 +251,6 @@ app.post('/login', async (req, res) => {
     }
 });
 
-
-
 app.post("/register", async (req, res) => {
     const { email, username, password, confirmPassword } = req.body;
 
@@ -229,14 +288,7 @@ app.post("/register", async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Tworzenie nowego użytkownika
-        const newUser = new User({
-            email,
-            username,
-            password: hashedPassword,
-            role: "USER"
-        });
-
-        await newUser.save();
+        registerNewUser(username, email, hashedPassword, "USER");
 
         res.redirect("/login");
     } catch (error) {
