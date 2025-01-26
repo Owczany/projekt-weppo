@@ -25,6 +25,7 @@
             text-decoration: none;
             color: #007BFF;
             font-size: 1.2rem;
+            margin: 0 15px;
         }
         .koszyk {
             width: 80%;
@@ -86,10 +87,8 @@
 </head>
 <body>
     <header>
-        <a href="/">Wróć do strony głównej</a>
-    </header>
-    <header>
-        <a href="/admin">Wróć do Panelu Administratora</a>
+        <a href="/">Strona główna</a>
+        <a href="/admin">Panel administratora</a>
     </header>
     <div class="koszyk">
         <% if (products && products.length > 0) { %>

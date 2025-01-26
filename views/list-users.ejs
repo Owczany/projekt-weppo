@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista użytkowników</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f8f9fa;
+        }
+        header {
+            background-color: #f4f4f4;
+            width: 100%;
+            padding: 1rem 0;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        header a {
+            text-decoration: none;
+            color: #007BFF;
+            font-size: 1.2rem;
+            margin: 0 15px;
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            background: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-top: 20px;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f4f4f4;
+        }
+        .delete {
+            background: none;
+            border: none;
+            color: #ff4d4d;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .delete[disabled] {
+            color: #aaa;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/">Strona główna</a>
+        <a href="/admin">Panel administratora</a>
+    </header>
+    <div class="container">
+        <h1>Lista użytkowników</h1>
+        <% if (users && users.length > 0) { %>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Login</th>
+                        <th>Rola</th>
+                        <th>Usuń</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% users.forEach(user => { %>
+                        <tr>
+                            <td><%= user.email %></td>
+                            <td><%= user.username %></td>
+                            <td><%= user.role %></td>
+                            <td>
+                                <% if (user.role !== 'admin') { %>
+                                    <form action="/admin/users/<%= user._id %>/delete" method="POST" style="margin: 0;">
+                                        <button class="delete" type="submit">&times;</button>
+                                    </form>
+                                <% } else { %>
+                                    <button class="delete" disabled>&times;</button>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        <% } else { %>
+            <p>Brak użytkowników w bazie danych.</p>
+        <% } %>
+    </div>
+</body>
+</html>

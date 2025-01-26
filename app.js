@@ -85,6 +85,15 @@ async function getProducts() {
     }
 }
 
+async function getUsers() {
+    try {
+        const users = await User.find();
+        return users;
+    } catch (error) {
+        console.error('Błąd podczas pobierania użytkowników:', error);
+        return [];
+    }
+}
 
 
 async function registerNewUser(username, email, password, role) {
@@ -191,15 +200,38 @@ app.post('/admin/products/add', upload.single('product-image'), async (req, res)
     }
 });
 
-app.get('/admin/users', (req, res) => { 
+app.get('/admin/users', async (req, res) => { 
     const { login, role } = req.cookies;
     if (role !== "admin") {
         res.send("Nie masz wystarczających uprawnień!");
     }
     else {
-        res.send("Work in progress...");
+        const users = await getUsers();
+        res.render('list-users', { users });
     }
 })
+
+app.post('/admin/users/:id/delete', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).send('Nie znaleziono użytkownika.');
+        }
+
+        if (user.role === 'admin') {
+            return res.status(403).send('Nie można usunąć użytkownika o roli admin.');
+        }
+
+        await User.findByIdAndDelete(userId);
+        res.redirect('/admin/users');
+    } catch (error) {
+        console.error('Błąd podczas usuwania użytkownika:', error);
+        res.status(500).send('Wystąpił błąd podczas usuwania użytkownika.');
+    }
+});
+
 
 app.get('/admin/baskets', (req, res) => { 
     const { login, role } = req.cookies;
