@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= product.name %></title>
+    <title>
+        <%= product.name %>
+    </title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,6 +16,7 @@
             flex-direction: column;
             align-items: center;
         }
+
         header {
             background-color: #f4f4f4;
             width: 100%;
@@ -20,35 +24,42 @@
             text-align: center;
             border-bottom: 1px solid #ddd;
         }
+
         header a {
             text-decoration: none;
             color: #007BFF;
             font-size: 1.2rem;
         }
+
         .product {
             margin-top: 2rem;
             text-align: center;
             max-width: 600px;
             width: 100%;
         }
+
         .product img {
             width: 100%;
             max-width: 400px;
             border-radius: 10px;
         }
+
         .product h2 {
             margin: 1rem 0 0.5rem;
             font-size: 1.5rem;
         }
+
         .product p {
             margin: 0.5rem 0;
             font-size: 1.2rem;
         }
+
         .expandable {
             text-align: left;
             max-width: 400px;
             margin: 1rem auto;
         }
+
         .expandable button {
             background-color: #007BFF;
             color: white;
@@ -57,15 +68,18 @@
             cursor: pointer;
             border-radius: 5px;
         }
+
         .expandable-content {
             display: none;
             margin-top: 1rem;
             font-size: 1rem;
             color: #333;
         }
+
         .add-to-cart {
             margin-top: 1rem;
         }
+
         .add-to-cart button {
             background-color: #28a745;
             color: white;
@@ -75,11 +89,13 @@
             border-radius: 5px;
             font-size: 1rem;
         }
+
         .add-to-cart button:hover {
             background-color: #218838;
         }
     </style>
 </head>
+
 <body>
     <header>
         <a href="/shop">Wróć do strony głównej</a>
@@ -87,13 +103,18 @@
 
     <div class="product">
         <img src="<%= product.photo %>" alt="<%= product.name %>">
-        <h2><%= product.name %></h2>
-        <p>Cena: $<%= product.price.toFixed(2) %></p>
+        <h2>
+            <%= product.name %>
+        </h2>
+        <p>Cena: $<%= product.price.toFixed(2) %>
+        </p>
 
         <div class="expandable">
             <button onclick="toggleDescription()">Pokaż opis produktu</button>
             <div class="expandable-content" id="description">
-                <p><%= product.description %></p>
+                <p>
+                    <%= product.description %>
+                </p>
             </div>
         </div>
 
@@ -116,9 +137,35 @@
             }
         }
 
-        function addToCart() {
-            alert('Produkt został dodany do koszyka!');
-        }
+        // Pobieramy wszystkie przyciski "Do koszyka"
+        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+            button.addEventListener('click', async (event) => {
+                const productId = event.target.getAttribute('data-id'); // Pobierz ID produktu z atrybutu data-id
+                console.log('ID produktu w przeglądarce:', productId); // Debugowanie w przeglądarce
+
+                try {
+                    const response = await fetch('/cart/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ productId }), // Przekazujemy ID produktu
+                    });
+
+                    if (response.ok) {
+                        alert('Produkt został dodany do koszyka!');
+                    } else {
+                        const data = await response.json();
+                        alert(data.message || 'Nie udało się dodać produktu do koszyka.');
+                    }
+                } catch (error) {
+                    console.error('Błąd podczas dodawania do koszyka:', error);
+                    alert('Wystąpił błąd. Spróbuj ponownie.');
+                }
+            });
+        });
+
     </script>
 </body>
+
 </html>

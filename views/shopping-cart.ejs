@@ -118,7 +118,7 @@
                         <% }; %>
 
                             <div class="przycisk-kupuje">
-                                <button class="kupuje">Kupuję</button>
+                                <button class="kupuje" onclick="placeOrder()">Kupuję</button>
                             </div>
 
                             <% } else { %>
@@ -126,6 +126,29 @@
                                 <% } %>
     </div>
     <script>
+
+        async function placeOrder() {
+            try {
+                const response = await fetch('/shopping-cart/checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    alert('Zamówienie zostało złożone!');
+                    window.location.reload(); // Odśwież stronę po zakończeniu
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'Nie udało się złożyć zamówienia.');
+                }
+            } catch (error) {
+                console.error('Błąd podczas składania zamówienia:', error);
+                alert('Wystąpił błąd. Spróbuj ponownie.');
+            }
+        }
+
         document.querySelectorAll('.delete').forEach(button => {
             button.addEventListener('click', async (event) => {
                 const cartId = event.target.getAttribute('data-id'); // Pobierz ID z atrybutu data-id

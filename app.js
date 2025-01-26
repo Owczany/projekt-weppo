@@ -10,6 +10,8 @@ import { error } from 'console';
 
 // Inicjalizacja Express
 const app = express();
+app.use(express.static('public'));
+app.use(express.json());
 
 mongoose.connect('mongodb://127.0.0.1:27017/sklep', {
     useNewUrlParser: true,
@@ -30,29 +32,18 @@ const prodcutSchema = new mongoose.Schema({
     description: String,
     photo: String,
     price: Number,
-})
+});
 
-const orderSchema = new mongoose.Schema({
-    id: Number,
-    userID: Number,
-
-})
+// Kolekcja carts
+const cartSchema = new mongoose.Schema({
+    username: String,
+    productID: Number,
+    status: String,
+});
 
 const User = mongoose.model('User', userSchema);
-const Product = mongoose.model('Product', prodcutSchema);
-const Order = mongoose.model('Order', orderSchema);
-
-async function getProducts() {
-    try {
-        const products = await Product.find(); // Pobranie wszystkich dokumentów z kolekcji `products`
-        return products; // Zwraca tablicę produktów
-    } catch (error) {
-        console.error('Error fetching products:', error);
-        return []; // Zwraca pustą tablicę w przypadku błędu
-    }
-}
-
-
+const Product = mongoose.model('Product', productSchema);
+const Cart = mongoose.model('Cart', cartSchema)
 
 async function registerNewUser(username, email, password, role) {
     const user = new User({ username: username, email: email, password: password, role: role });
@@ -104,6 +95,55 @@ app.get('/', (req, res) => {
         res.redirect('/login');
     }
 });
+
+app.get('/add-product', (req, res) => {
+    const { login, role } = req.cookies;
+    if (login && role === 'ADMIN') {
+        res.render('add-product');
+    } else {
+        res.redirect('/login');
+    }
+});
+
+// Jak ma przbiegać renderowanie shopping card
+app.get('/shopping-cart', async (req, res) => {
+    const { login, role } = req.cookies;
+    if (login && role) {
+        try {
+            const carts = await Cart.find({ username: login });
+            const products = []
+            for (const cart of carts) {
+                let product = await Product.findOne({id: cart.productID});
+                console.log(product)
+                products.push(product)
+            }
+
+            res.render('shopping-cart', { login, products, carts });
+        } catch (err) {
+            console.error(err)
+        }
+    } else {
+        res.redirect('/login');
+    }
+});
+
+// Usuwanie produktu z koszyka
+app.post('/shopping-cart/delete', async (req, res) => {
+    const { id } = req.body;
+
+    if (!id) return res.status(400).send({ message: 'ID nie zostało podane.' });
+
+    try {
+        const result = await Cart.findByIdAndDelete(id);
+        if (!result) return res.status(404).send({ message: 'Produkt nie został znaleziony.' });
+
+        res.status(200).send({ message: 'Produkt został usunięty z koszyka.' });
+    } catch (error) {
+        console.error('Error deleting cart item:', error);
+        res.status(500).send({ message: 'Wystąpił błąd podczas usuwania produktu.' });
+    }
+});
+
 
 // Testowow do sprawdzania widoków
 // app.get('/shop', (req, res) => {    
@@ -181,6 +221,21 @@ app.get('/product/:id', async (req, res) => {
     }
 });
 
+app.get('/product/:id', async (req, res) => {
+    try {
+        const productId = req.params.id; // Pobierz ID produktu z URL
+        const product = await Product.findOne({ id: productId }); // Znajdź produkt w bazie danych
+
+        if (!product) {
+            return res.status(404).send('Produkt nie został znaleziony');
+        }
+
+        res.render('product_page', { product }); // Przekaż dane produktu do widoku
+    } catch (error) {
+        console.error('Błąd podczas ładowania produktu:', error);
+        res.status(500).send('Wystąpił błąd podczas ładowania produktu.');
+    }
+});
 
 app.get('/login', (req, res) => {
     res.render('login', { error: null });
