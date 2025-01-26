@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage,
     fileFilter: (req, file, cb) => {
-        const fileTypes = /jpeg|jpg|png|gif/;
+        const fileTypes = /jpeg|jpg|png|gif|webp/;
         const extName = fileTypes.test(path.extname(file.originalname).toLowerCase());
         const mimeType = fileTypes.test(file.mimetype);
 
@@ -225,6 +225,29 @@ app.post('/admin/users/:id/delete', async (req, res) => {
         }
     }
 });
+
+app.post('/admin/products/:id/delete', async (req, res) => {
+    const { login, role } = req.cookies;
+    if (role !== "ADMIN") {
+        res.send("Nie masz wystarczających uprawnień!");
+    } else {
+        try {
+            const prodId = parseInt(req.params.id, 10); // Parsuj `id` na liczbę
+            const prod = await Product.findOne({ id: prodId }); // Szukaj po polu `id`
+
+            if (!prod) {
+                return res.status(404).send('Nie znaleziono produktu.');
+            }
+
+            await Product.deleteOne({ id: prodId }); // Usuń produkt po polu `id`
+            res.redirect('/admin/products');
+        } catch (error) {
+            console.error('Błąd podczas usuwania produktu:', error);
+            res.status(500).send('Wystąpił błąd podczas usuwania produktu.');
+        }
+    }
+});
+
 
 
 app.get('/admin/baskets', (req, res) => { 
