@@ -93,7 +93,7 @@
                             <td><%= user.username %></td>
                             <td><%= user.role %></td>
                             <td>
-                                <% if (user.role !== 'admin') { %>
+                                <% if (user.role !== 'ADMIN') { %>
                                     <form action="/admin/users/<%= user._id %>/delete" method="POST" style="margin: 0;">
                                         <button class="delete" type="submit">&times;</button>
                                     </form>

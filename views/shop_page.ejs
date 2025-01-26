@@ -138,7 +138,7 @@
             </form>
         </div>
         <div class="cart-icon">
-            <a href="shopping-card.html">
+            <a href="/shopping-card">
                 <button type="button">🛒</button>
             </a>
         </div>
@@ -149,9 +149,19 @@
                 </a>
             </div>
         <% } %>
-        <a href="/login">
-        <button type="button">Zaloguj się</button>
-        </a>
+        <div>
+            <% if (login) { %>
+                <span>Jesteś zalogowany jako <b><%= login %></b></span>
+                <form action="/logout" method="post" style="display: inline;">
+                    <button type="submit" style="background-color: #e63946; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+                        Wyloguj się
+                    </button>
+                </form>
+            <% } else { %>
+                <button type="button" onclick="window.location.href='/login'">Zaloguj się</button>
+                <button type="button" onclick="window.location.href='/register'">Zarejestruj się</button>
+            <% } %>
+        </div>
     </div>
     
     <!--Tutaj są tylko na sztywno plakietki które się potem wywali-->
