@@ -10,6 +10,8 @@ import { error } from 'console';
 
 // Inicjalizacja Express
 const app = express();
+app.use(express.static('public'));
+app.use(express.json());
 
 mongoose.connect('mongodb://127.0.0.1:27017/sklep', {
     useNewUrlParser: true,
@@ -38,34 +40,12 @@ const productSchema = new mongoose.Schema({
 const cartSchema = new mongoose.Schema({
     username: String,
     productID: Number,
-    quantity: Number,
-});
-
-// Kolekcja orders
-const orderSchema = new mongoose.Schema({
-    id: Number,
-    username: String,
-    productID: Number,
-    quantity: Number,
     status: String,
 });
 
 const User = mongoose.model('User', userSchema);
 const Product = mongoose.model('Product', productSchema);
 const Cart = mongoose.model('Cart', cartSchema)
-const Order = mongoose.model('Order', orderSchema);
-
-async function getProducts() {
-    try {
-        const products = await Product.find(); // Pobranie wszystkich dokumentów z kolekcji `products`
-        return products; // Zwraca tablicę produktów
-    } catch (error) {
-        console.error('Error fetching products:', error);
-        return []; // Zwraca pustą tablicę w przypadku błędu
-    }
-}
-
-
 
 async function registerNewUser(username, email, password, role) {
     const user = new User({ username: username, email: email, password: password, role: role });
@@ -132,10 +112,10 @@ app.get('/shopping-cart', async (req, res) => {
     const { login, role } = req.cookies;
     if (login && role) {
         try {
-            const carts = await Cart.find({ username: login });
+            const carts = await Cart.find({ username: login, status: "IN CART" });
             const products = []
             for (const cart of carts) {
-                let product = await Product.findOne({id: cart.productID});
+                let product = await Product.findOne({ id: cart.productID });
                 console.log(product)
                 products.push(product)
             }
@@ -148,6 +128,44 @@ app.get('/shopping-cart', async (req, res) => {
         res.redirect('/login');
     }
 });
+
+
+app.post('/cart/add', async (req, res) => {
+    console.log('Otrzymane dane:', req.body); // Sprawdź, co dokładnie jest odbierane w req.body
+    const { productId } = req.body;
+    console.log('Otrzymane productId:', productId); // Sprawdź, czy productId jest undefined
+
+    const { login } = req.cookies;
+
+    if (!login) {
+        return res.status(401).send({ message: 'Musisz być zalogowany, aby dodać produkt do koszyka.' });
+    }
+
+    if (!productId) {
+        return res.status(400).send({ message: 'Nie podano ID produktu.' });
+    }
+
+    try {
+        const product = await Product.findOne({ id: productId });
+        if (!product) {
+            return res.status(404).send({ message: 'Produkt nie istnieje.' });
+        }
+
+        const newCartItem = new Cart({
+            username: login,
+            productID: productId,
+            status: 'IN CART'
+        });
+
+        await newCartItem.save();
+        res.status(200).send({ message: 'Produkt został dodany do koszyka.' });
+    } catch (error) {
+        console.error('Błąd podczas dodawania produktu do koszyka:', error);
+        res.status(500).send({ message: 'Wystąpił błąd podczas dodawania produktu do koszyka.' });
+    }
+});
+
+
 
 // Usuwanie produktu z koszyka
 app.post('/shopping-cart/delete', async (req, res) => {
@@ -166,12 +184,31 @@ app.post('/shopping-cart/delete', async (req, res) => {
     }
 });
 
+app.post('/shopping-cart/checkout', async (req, res) => {
+    const { login } = req.cookies;
 
-// Testowow do sprawdzania widoków
-// app.get('/shop', (req, res) => {    
-//     const { login } = req.cookies; // Pobierz login z ciasteczek
-//     res.render('shop_page', { login }); // Przekaż login do widoku
-// });
+    if (!login) {
+        return res.status(401).send({ message: 'Musisz być zalogowany, aby złożyć zamówienie.' });
+    }
+
+    try {
+        // Aktualizacja statusu wszystkich produktów w koszyku użytkownika
+        const result = await Cart.updateMany(
+            { username: login, status: 'IN CART' }, // Znajdź produkty z koszyka
+            { $set: { status: 'IN ORDER' } }       // Ustaw status na "IN ORDER"
+        );
+
+        if (result.modifiedCount === 0) {
+            return res.status(400).send({ message: 'Brak produktów do zamówienia.' });
+        }
+
+        res.status(200).send({ message: 'Zamówienie zostało złożone.' });
+    } catch (error) {
+        console.error('Błąd podczas składania zamówienia:', error);
+        res.status(500).send({ message: 'Wystąpił błąd podczas składania zamówienia.' });
+    }
+});
+
 
 async function seedProducts() {
     const sampleProducts = [
@@ -218,6 +255,21 @@ app.get('/shop', async (req, res) => {
     }
 });
 
+app.get('/product/:id', async (req, res) => {
+    try {
+        const productId = req.params.id; // Pobierz ID produktu z URL
+        const product = await Product.findOne({ id: productId }); // Znajdź produkt w bazie danych
+
+        if (!product) {
+            return res.status(404).send('Produkt nie został znaleziony');
+        }
+
+        res.render('product_page', { product }); // Przekaż dane produktu do widoku
+    } catch (error) {
+        console.error('Błąd podczas ładowania produktu:', error);
+        res.status(500).send('Wystąpił błąd podczas ładowania produktu.');
+    }
+});
 
 app.get('/login', (req, res) => {
     res.render('login', { error: null });
