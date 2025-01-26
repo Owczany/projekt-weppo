@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koszyk</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f8f9fa;
+        }
+
+        header {
+            background-color: #f4f4f4;
+            width: 100%;
+            padding: 1rem 0;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        header a {
+            text-decoration: none;
+            color: #007BFF;
+            font-size: 1.2rem;
+        }
+
+        .koszyk {
+            width: 80%;
+            max-width: 600px;
+            background: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-top: 20px;
+            padding: 20px;
+        }
+
+        .produkt {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .produkt:last-child {
+            border-bottom: none;
+        }
+
+        .nazwa {
+            font-size: 16px;
+        }
+
+        .cena {
+            font-weight: bold;
+        }
+
+        .zdjecie {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+
+        .delete {
+            background: none;
+            border: none;
+            color: #ff4d4d;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .przycisk-kupuje {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .kupuje {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .kupuje:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <a href="/shop">Wróć do strony głównej</a>
+    </header>
+    <div class="koszyk">
+        <% if (products && products.length> 0) { %>
+            <% for (let i=0; i < products.length; i++) { %>
+                <% let product=products[i] %>
+                    <% let cart=carts[i]%>
+                        <div class="produkt">
+                            <img src="<%= product.photo %>" alt="<%= product.name %>" class="zdjecie">
+                            <span class="nazwa">
+                                <%= product.name %>
+                            </span>
+                            <span class="cena">$<%= product.price.toFixed(2) %></span>
+                            <button class="delete" data-id="<%= cart._id %>">&times;</button>
+                        </div>
+                        <% }; %>
+
+                            <div class="przycisk-kupuje">
+                                <button class="kupuje">Kupuję</button>
+                            </div>
+
+                            <% } else { %>
+                                <p>Brak produktów do wyświetlenia.</p>
+                                <% } %>
+    </div>
+    <script>
+        document.querySelectorAll('.delete').forEach(button => {
+            button.addEventListener('click', async (event) => {
+                const cartId = event.target.getAttribute('data-id'); // Pobierz ID z atrybutu data-id
+                try {
+                    const response = await fetch('/shopping-cart/delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ id: cartId }),
+                    });
+
+                    if (response.ok) {
+                        // Usuń element z DOM
+                        event.target.closest('.produkt').remove();
+
+                        // Wyświetl komunikat o sukcesie
+                        alert('Produkt został usunięty z koszyka.');
+                    } else {
+                        alert('Nie udało się usunąć produktu.');
+                    }
+                } catch (error) {
+                    console.error('Błąd:', error);
+                    alert('Wystąpił błąd. Spróbuj ponownie.');
+                }
+            });
+        });
+    </script>
+
+</body>
+
+</html>
