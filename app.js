@@ -10,10 +10,36 @@ import bcrypt from 'bcrypt';
 import { error } from 'console';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+import multer from 'multer';
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/'); 
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname)); 
+    },
+});
+
+const upload = multer({
+    storage,
+    fileFilter: (req, file, cb) => {
+        const fileTypes = /jpeg|jpg|png|gif/;
+        const extName = fileTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimeType = fileTypes.test(file.mimetype);
+
+        if (extName && mimeType) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Only images are allowed!'));
+        }
+    },
+});
 
 const app = express();
 app.set('view engine', 'ejs');
 app.set('views', './views');
+app.use('/uploads', express.static('uploads'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -114,6 +140,43 @@ app.get('/admin/products', (req, res) => {
     }
 })
 
+app.get('/admin/products/add', (req, res) => { 
+    const { login, role } = req.cookies;
+    if (role !== "admin") {
+        res.send("Nie masz wystarczających uprawnień!");
+    }
+    else {
+        res.render("add-product");
+    }
+})
+
+app.post('/admin/products/add', upload.single('product-image'), async (req, res) => {
+    try {
+        const { 'product-name': name, price, description } = req.body;
+        const photo = req.file ? `/uploads/${req.file.filename}` : null;
+
+        if (!name || !price || !description || !photo) {
+            return res.status(400).send('All fields are required.');
+        }
+
+        const productCount = await Product.countDocuments();
+
+        const newProduct = new Product({
+            id: productCount + 1,
+            name,
+            description,
+            photo,
+            price: parseFloat(price),
+        });
+
+        await newProduct.save();
+        res.redirect('/admin/products');
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('An error occurred while adding the product.');
+    }
+});
+
 app.get('/admin/users', (req, res) => { 
     const { login, role } = req.cookies;
     if (role !== "admin") {
@@ -213,6 +276,7 @@ app.post("/register", async (req, res) => {
 });
 
 http.createServer(app).listen(3000);
+console.log(await getProducts());
 console.log("started");
 
 // monogod --dbpath TwojaKolekcja
