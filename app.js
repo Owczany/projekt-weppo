@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { error } from 'console';
 
 // Inicjalizacja Express
@@ -92,9 +92,59 @@ app.get('/', (req, res) => {
 });
 
 // Testowow do sprawdzania widoków
-app.get('/shop', (req, res) => {
-    res.render('shop_page', { error: null })
+// app.get('/shop', (req, res) => {    
+//     const { login } = req.cookies; // Pobierz login z ciasteczek
+//     res.render('shop_page', { login }); // Przekaż login do widoku
+// });
+
+async function seedProducts() {
+    const sampleProducts = [
+        {
+            id: 1,
+            name: "BMW 8 Series",
+            description: "Luxury car with modern design.",
+            photo: "https://www.motortrend.com/uploads/sites/10/2023/10/2024-bmw-8-series-840i-gran-coupe-4wd-sedan-angular-front.png?w=768&width=768&q=75&format=webp",
+            price: 75000,
+        },
+        {
+            id: 2,
+            name: "Audi A6",
+            description: "High-performance car with a sleek finish.",
+            photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT50K1eGe2rWpcLD5pF57zLFyfnkkrF_UqX7w&s",
+            price: 60000,
+        },
+    ];
+
+    try {
+        await Product.insertMany(sampleProducts);
+        console.log('Sample products added to database');
+    } catch (error) {
+        console.error('Error adding sample products:', error);
+    }
+}
+
+// Wywołaj funkcję (pamiętaj, aby potem usunąć lub zakomentować to wywołanie)
+seedProducts();
+
+app.get('/shop', async (req, res) => {
+    try {
+        const searchQuery = req.query.search || ''; // Pobierz parametr wyszukiwania z zapytania
+        const regex = new RegExp(searchQuery, 'i'); // Stwórz wyrażenie regularne ignorujące wielkość liter
+        const products = await Product.find({
+            $or: [
+                { name: regex },
+                { description: regex }
+            ]
+        }); // Szukaj w nazwie lub opisie produktów
+
+        const { login } = req.cookies; // Pobierz login użytkownika z ciasteczek
+        res.render('shop_page', { products, login }); // Przekazanie produktów i loginu do widoku
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).send('Error fetching products');
+    }
 });
+
 
 app.get('/login', (req, res) => {
     res.render('login', { error: null });
