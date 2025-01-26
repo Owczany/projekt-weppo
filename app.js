@@ -130,13 +130,14 @@ app.get('/admin', (req, res) => {
     }
 })
 
-app.get('/admin/products', (req, res) => { 
+app.get('/admin/products', async (req, res) => { 
     const { login, role } = req.cookies;
     if (role !== "admin") {
         res.send("Nie masz wystarczających uprawnień!");
     }
     else {
-        res.render("admin_products");
+        const products = await getProducts();
+        res.render("admin_products", { products });
     }
 })
 
