@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { error } from 'console';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,24 +57,23 @@ const userSchema = new mongoose.Schema({
     role: String,
 })
 
-const productSchema = new mongoose.Schema({
+const prodcutSchema = new mongoose.Schema({
     id: Number,
     name: String,
     description: String,
     photo: String,
     price: Number,
-});
+})
 
-// Kolekcja carts
-const cartSchema = new mongoose.Schema({
-    username: String,
-    productID: Number,
-    status: String,
-});
+const orderSchema = new mongoose.Schema({
+    id: Number,
+    userID: Number,
+
+})
 
 const User = mongoose.model('User', userSchema);
 const Product = mongoose.model('Product', prodcutSchema);
-const Cart = mongoose.model('Cart', cartSchema)
+const Order = mongoose.model('Order', orderSchema);
 
 async function getProducts() {
     try {
@@ -138,6 +137,279 @@ app.get('/', (req, res) => {
     if (login && role) {
         //res.send(`Welcome ${login}! Your role is ${role}.`);
         res.render('shop_page', { error: null, admin : role === "admin" })
+    } else {
+        res.redirect('/login');
+    }
+});
+
+app.get('/admin', (req, res) => { 
+    const { login, role } = req.cookies;
+    if (role !== "admin") {
+        res.send("Nie masz wystarczających uprawnień!");
+    }
+    else {
+        res.render("admin");
+    }
+})
+
+app.get('/admin/products', async (req, res) => { 
+    const { login, role } = req.cookies;
+    if (role !== "admin") {
+        res.send("Nie masz wystarczających uprawnień!");
+    }
+    else {
+        const products = await getProducts();
+        res.render("admin_products", { products });
+    }
+})
+
+app.get('/admin/products/add', (req, res) => { 
+    const { login, role } = req.cookies;
+    if (role !== "admin") {
+        res.send("Nie masz wystarczających uprawnień!");
+    }
+    else {
+        res.render("add-product");
+    }
+})
+
+app.post('/admin/products/add', upload.single('product-image'), async (req, res) => {
+    try {
+        const { 'product-name': name, price, description } = req.body;
+        const photo = req.file ? `/uploads/${req.file.filename}` : null;
+
+        if (!name || !price || !description || !photo) {
+            return res.status(400).send('All fields are required.');
+        }
+
+        const productCount = await Product.countDocuments();
+
+        const newProduct = new Product({
+            id: productCount + 1,
+            name,
+            description,
+            photo,
+            price: parseFloat(price),
+        });
+
+        await newProduct.save();
+        res.redirect('/admin/products');
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('An error occurred while adding the product.');
+    }
+});
+
+app.get('/admin/users', async (req, res) => { 
+    const { login, role } = req.cookies;
+    if (role !== "admin") {
+        res.send("Nie masz wystarczających uprawnień!");
+    }
+    else {
+        const users = await getUsers();
+        res.render('list-users', { users });
+    }
+})
+
+app.post('/admin/users/:id/delete', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).send('Nie znaleziono użytkownika.');
+        }
+
+        if (user.role === 'admin') {
+            return res.status(403).send('Nie można usunąć użytkownika o roli admin.');
+        }
+
+        await User.findByIdAndDelete(userId);
+        res.redirect('/admin/users');
+    } catch (error) {
+        console.error('Błąd podczas usuwania użytkownika:', error);
+        res.status(500).send('Wystąpił błąd podczas usuwania użytkownika.');
+    }
+});
+
+
+app.get('/admin/baskets', (req, res) => { 
+    const { login, role } = req.cookies;
+    if (role !== "admin") {
+        res.send("Nie masz wystarczających uprawnień!");
+    }
+    else {
+        res.send("Work in progress...");
+    }
+})
+
+// Testy do sprawdzania widoków
+app.get('/shop', (req, res) => {
+    res.render('shop_page', { error: null })
+});
+
+app.get('/login', (req, res) => {
+    res.render('login', { error: null });
+});
+
+app.get('/register', (req, res) => {
+    res.render('register', { error: null, email: null, username: null });
+})
+
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    const user = await validateUser(username, password);
+
+    if (user) {
+        res.cookie('login', user.login, { httpOnly: true });
+        res.cookie('role', user.role, { httpOnly: true });
+        res.redirect('/');
+    } else {
+        res.render('login', { error: 'User does not exist!' });
+    }
+});
+
+app.post("/register", async (req, res) => {
+    const { email, username, password, confirmPassword } = req.body;
+
+    if (password !== confirmPassword) {
+        return res.render("register", {
+            error: "Passwords do not match",
+            email: email,
+            username: username
+        });
+    }
+
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.render("register", {
+                error: "This email is already registered",
+                email,
+                username
+            });
+        }
+        const existingUsername = await User.findOne({ username });
+        if (existingUsername) {
+            return res.render("register", {
+                error: "Username is already taken",
+                email,
+                username
+            });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({
+            email,
+            username,
+            password: hashedPassword,
+            role: "user"
+        });
+
+        await newUser.save();
+
+        res.redirect("/login");
+    } catch (error) {
+        console.error("Error during registration:", error);
+        res.render("register", {
+            error: "An error occurred during registration. Please try again.",
+            email,
+            username
+        });
+    }
+});
+
+http.createServer(app).listen(3000);
+console.log("started");
+
+// monogod --dbpath TwojaKolekcja
+// monogosh
+
+import http from 'http';
+import express from 'express';
+import bodyParser from 'body-parser';
+import fs from 'fs';
+import path from 'path';
+import mongoose from 'mongoose';
+import cookieParser from 'cookie-parser';
+import bcrypt from 'bcryptjs';
+import { error } from 'console';
+
+// Inicjalizacja Express
+app.use(express.static('public'));
+app.use(express.json());
+
+mongoose.connect('mongodb://127.0.0.1:27017/sklep', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true, // Poprawiono literówkę
+}).then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error:', err));
+
+
+
+const productSchema = new mongoose.Schema({
+    id: Number,
+    name: String,
+    description: String,
+    photo: String,
+    price: Number,
+});
+
+// Kolekcja carts
+const cartSchema = new mongoose.Schema({
+    username: String,
+    productID: Number,
+    status: String,
+});
+
+
+const Cart = mongoose.model('Cart', cartSchema)
+
+async function registerNewUser(username, email, password, role) {
+    const user = new User({ username: username, email: email, password: password, role: role });
+    await user.save();
+    console.log('User added:', user);
+}
+
+app.set('view engine', 'ejs');
+app.set('views', './views');
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+async function validateUser(login, password) {
+    try {
+        // Znajdź użytkownika w MongoDB po loginie
+        const user = await User.findOne({ username: login });
+
+        // Jeśli użytkownik nie istnieje, zwróć null
+        if (!user) {
+            return null;
+        }
+
+        // Sprawdź, czy hasło jest poprawne
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        // Jeśli hasło jest nieprawidłowe, zwróć null
+        if (!isPasswordValid) {
+            console.log('Niepoprawne hasło logowania')
+            return null;
+        }
+
+        // Zwróć informacje o użytkowniku (login i rola)
+        return {
+            login: user.username,
+            role: user.role
+        };
+    } catch (error) {
+        console.error('Błąd podczas walidacji użytkownika:', error);
+        throw new Error('Błąd walidacji użytkownika');
+    }
+}
+
+app.get('/', (req, res) => {
+    const { login, role } = req.cookies;
+    if (login && role) {
+        res.send(`Welcome ${login}! Your role is ${role}.`);
     } else {
         res.redirect('/login');
     }
@@ -258,119 +530,41 @@ app.post('/shopping-cart/checkout', async (req, res) => {
 });
 
 
-app.get('/admin', (req, res) => { 
-    const { login, role } = req.cookies;
-    if (role !== "admin") {
-        res.send("Nie masz wystarczających uprawnień!");
-    }
-    else {
-        res.render("admin");
-    }
-})
+// Testowow do sprawdzania widoków
+// app.get('/shop', (req, res) => {    
+//     const { login } = req.cookies; // Pobierz login z ciasteczek
+//     res.render('shop_page', { login }); // Przekaż login do widoku
+// });
 
-app.get('/admin/products', async (req, res) => { 
-    const { login, role } = req.cookies;
-    if (role !== "admin") {
-        res.send("Nie masz wystarczających uprawnień!");
-    }
-    else {
-        const products = await getProducts();
-        res.render("admin_products", { products });
-    }
-})
+async function seedProducts() {
+    const sampleProducts = [
+        {
+            id: 1,
+            name: "BMW 8 Series",
+            description: "Luxury car with modern design.",
+            photo: "https://www.motortrend.com/uploads/sites/10/2023/10/2024-bmw-8-series-840i-gran-coupe-4wd-sedan-angular-front.png?w=768&width=768&q=75&format=webp",
+            price: 75000,
+        },
+        {
+            id: 3,
+            name: "Audi A6",
+            description: "High-performance car with a sleek finish.",
+            photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT50K1eGe2rWpcLD5pF57zLFyfnkkrF_UqX7w&s",
+            price: 60000,
+        },
+    ];
 
-app.get('/admin/products/add', (req, res) => { 
-    const { login, role } = req.cookies;
-    if (role !== "admin") {
-        res.send("Nie masz wystarczających uprawnień!");
-    }
-    else {
-        res.render("add-product");
-    }
-})
-
-app.post('/admin/products/add', upload.single('product-image'), async (req, res) => {
     try {
-        const { 'product-name': name, price, description } = req.body;
-        const photo = req.file ? `/uploads/${req.file.filename}` : null;
-
-        if (!name || !price || !description || !photo) {
-            return res.status(400).send('All fields are required.');
-        }
-
-        const productCount = await Product.countDocuments();
-
-        const newProduct = new Product({
-            id: productCount + 1,
-            name,
-            description,
-            photo,
-            price: parseFloat(price),
-        });
-
-        await newProduct.save();
-        res.redirect('/admin/products');
+        await Product.insertMany(sampleProducts);
+        console.log('Sample products added to database');
     } catch (error) {
-        console.error(error);
-        res.status(500).send('An error occurred while adding the product.');
+        console.error('Error adding sample products:', error);
     }
-});
+}
 
-app.get('/admin/users', async (req, res) => { 
-    const { login, role } = req.cookies;
-    if (role !== "admin") {
-        res.send("Nie masz wystarczających uprawnień!");
-    }
-    else {
-        const users = await getUsers();
-        res.render('list-users', { users });
-    }
-})
-
-app.post('/admin/users/:id/delete', async (req, res) => {
-    try {
-        const userId = req.params.id;
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.status(404).send('Nie znaleziono użytkownika.');
-        }
-
-        if (user.role === 'admin') {
-            return res.status(403).send('Nie można usunąć użytkownika o roli admin.');
-        }
-
-        await User.findByIdAndDelete(userId);
-        res.redirect('/admin/users');
-    } catch (error) {
-        console.error('Błąd podczas usuwania użytkownika:', error);
-        res.status(500).send('Wystąpił błąd podczas usuwania użytkownika.');
-    }
-});
+// seedProducts();
 
 
-app.get('/admin/baskets', (req, res) => { 
-    const { login, role } = req.cookies;
-    if (role !== "admin") {
-        res.send("Nie masz wystarczających uprawnień!");
-    }
-    else {
-        res.send("Work in progress...");
-    }
-})
-
-// Testy do sprawdzania widoków
-app.get('/shop', (req, res) => {
-    res.render('shop_page', { error: null })
-});
-
-app.get('/login', (req, res) => {
-    res.render('login', { error: null });
-});
-
-app.get('/register', (req, res) => {
-    res.render('register', { error: null, email: null, username: null });
-})
 
 app.get('/shop', async (req, res) => {
     try {
@@ -429,9 +623,16 @@ app.get('/product/:id', async (req, res) => {
     }
 });
 
+app.get('/login', (req, res) => {
+    res.render('login', { error: null });
+});
+
+app.get('/register', (req, res) => {
+    res.render('register', { error: null, email: null, username: null });
+})
+
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
-    const user = await validateUser(username, password);
 
     try {
         // Poczekaj na wynik walidacji użytkownika
@@ -473,6 +674,7 @@ app.post("/register", async (req, res) => {
     }
 
     try {
+        // Sprawdzenie, czy email już istnieje
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.render("register", {
@@ -481,6 +683,8 @@ app.post("/register", async (req, res) => {
                 username
             });
         }
+
+        // Sprawdzenie, czy nazwa użytkownika już istnieje
         const existingUsername = await User.findOne({ username });
         if (existingUsername) {
             return res.render("register", {
@@ -489,19 +693,23 @@ app.post("/register", async (req, res) => {
                 username
             });
         }
+
+        // Haszowanie hasła
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Tworzenie nowego użytkownika
         const newUser = new User({
             email,
             username,
             password: hashedPassword,
-            role: "user"
+            role: "USER"
         });
 
         await newUser.save();
 
         res.redirect("/login");
     } catch (error) {
-        console.error("Error hashing password:", error);
+        console.error("Error during registration:", error);
         res.render("register", {
             error: "An error occurred during registration. Please try again.",
             email,
