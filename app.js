@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
     role: String,
 })
 
-const prodcutSchema = new mongoose.Schema({
+const productSchema = new mongoose.Schema({
     id: Number,
     name: String,
     description: String,
@@ -110,20 +110,61 @@ app.get('/shopping-cart', async (req, res) => {
     const { login, role } = req.cookies;
     if (login && role) {
         try {
-            const carts = await Cart.find({ username: login });
-            const products = []
+            const carts = await Cart.find({ username: login, status: "IN CART" });
+            const products = [];
+
             for (const cart of carts) {
-                let product = await Product.findOne({id: cart.productID});
-                console.log(product)
-                products.push(product)
+                const product = await Product.findOne({ id: cart.productID });
+                if (product) {
+                    products.push(product); // Dodaj tylko istniejące produkty
+                } else {
+                    console.warn(`Produkt o ID ${cart.productID} nie został znaleziony.`);
+                }
             }
 
             res.render('shopping-cart', { login, products, carts });
         } catch (err) {
-            console.error(err)
+            console.error('Błąd podczas pobierania koszyka:', err);
+            res.status(500).send('Wystąpił błąd podczas pobierania koszyka.');
         }
     } else {
         res.redirect('/login');
+    }
+});
+
+
+app.post('/cart/add', async (req, res) => {
+    console.log('Otrzymane dane:', req.body); // Sprawdź, co dokładnie jest odbierane w req.body
+    const { productId } = req.body;
+    console.log('Otrzymane productId:', productId); // Sprawdź, czy productId jest undefined
+
+    const { login } = req.cookies;
+
+    if (!login) {
+        return res.status(401).send({ message: 'Musisz być zalogowany, aby dodać produkt do koszyka.' });
+    }
+
+    if (!productId) {
+        return res.status(400).send({ message: 'Nie podano ID produktu.' });
+    }
+
+    try {
+        const product = await Product.findOne({ id: productId });
+        if (!product) {
+            return res.status(404).send({ message: 'Produkt nie istnieje.' });
+        }
+
+        const newCartItem = new Cart({
+            username: login,
+            productID: productId,
+            status: 'IN CART'
+        });
+
+        await newCartItem.save();
+        res.status(200).send({ message: 'Produkt został dodany do koszyka.' });
+    } catch (error) {
+        console.error('Błąd podczas dodawania produktu do koszyka:', error);
+        res.status(500).send({ message: 'Wystąpił błąd podczas dodawania produktu do koszyka.' });
     }
 });
 
@@ -141,6 +182,31 @@ app.post('/shopping-cart/delete', async (req, res) => {
     } catch (error) {
         console.error('Error deleting cart item:', error);
         res.status(500).send({ message: 'Wystąpił błąd podczas usuwania produktu.' });
+    }
+});
+
+app.post('/shopping-cart/checkout', async (req, res) => {
+    const { login } = req.cookies;
+
+    if (!login) {
+        return res.status(401).send({ message: 'Musisz być zalogowany, aby złożyć zamówienie.' });
+    }
+
+    try {
+        // Aktualizacja statusu wszystkich produktów w koszyku użytkownika
+        const result = await Cart.updateMany(
+            { username: login, status: 'IN CART' }, // Znajdź produkty z koszyka
+            { $set: { status: 'IN ORDER' } }       // Ustaw status na "IN ORDER"
+        );
+
+        if (result.modifiedCount === 0) {
+            return res.status(400).send({ message: 'Brak produktów do zamówienia.' });
+        }
+
+        res.status(200).send({ message: 'Zamówienie zostało złożone.' });
+    } catch (error) {
+        console.error('Błąd podczas składania zamówienia:', error);
+        res.status(500).send({ message: 'Wystąpił błąd podczas składania zamówienia.' });
     }
 });
 
@@ -177,6 +243,7 @@ async function seedProducts() {
     }
 }
 
+// seedProducts();
 
 
 

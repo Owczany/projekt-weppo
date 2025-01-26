@@ -120,8 +120,10 @@
 
         <% if (login) { %> <!-- Sprawdzenie, czy użytkownik jest zalogowany -->
             <div class="add-to-cart">
-                <button onclick="addToCart()">Do koszyka</button>
+                <!-- Użycie atrybutu data-id -->
+                <button class="add-to-cart-btn" data-id="<%= product.id %>">Do koszyka</button>
             </div>
+            
         <% } else { %>
             <p>Musisz się zalogować, aby dodać produkt do koszyka.</p>
         <% } %>
