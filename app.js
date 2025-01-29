@@ -46,10 +46,8 @@ app.use(cookieParser());
 app.use(express.json());
 
 
-mongoose.connect('mongodb://127.0.0.1:27017/sklep', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true, 
-}).then(() => console.log('Connected to MongoDB'))
+mongoose.connect('mongodb://127.0.0.1:27017/sklep')
+    .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
 const userSchema = new mongoose.Schema({
@@ -339,7 +337,7 @@ app.post("/register", async (req, res) => {
             email,
             username,
             password: hashedPassword,
-            role: "ADMIN"
+            role: "USER"
         });
 
         await newUser.save();
