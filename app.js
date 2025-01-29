@@ -119,7 +119,6 @@ async function validateUser(login, password) {
 app.get('/', (req, res) => {
     const { login, role } = req.cookies;
     if (login && role) {
-        //res.render('shop_page', { error: null, admin : role === "admin" || role ==="ADMIN", sort : null })
         res.redirect('/shop');
     } else {
         res.redirect('/login');
@@ -234,14 +233,14 @@ app.post('/admin/products/:id/delete', async (req, res) => {
         res.send("Nie masz wystarczających uprawnień!");
     } else {
         try {
-            const prodId = parseInt(req.params.id, 10); // Parsuj `id` na liczbę
-            const prod = await Product.findOne({ id: prodId }); // Szukaj po polu `id`
+            const prodId = parseInt(req.params.id, 10); 
+            const prod = await Product.findOne({ id: prodId }); 
 
             if (!prod) {
                 return res.status(404).send('Nie znaleziono produktu.');
             }
 
-            await Product.deleteOne({ id: prodId }); // Usuń produkt po polu `id`
+            await Product.deleteOne({ id: prodId }); 
             res.redirect('/admin/products');
         } catch (error) {
             console.error('Błąd podczas usuwania produktu:', error);
@@ -259,28 +258,23 @@ app.get('/admin/baskets', async (req, res) => {
     }
     else {
         try {
-            // Fetch all carts from the database
             const carts = await Cart.find();
     
-            // Fetch all products from the database to map their details
             const products = await Product.find();
     
-            // Create a map of productID to product details for easy lookup
             const productMap = products.reduce((map, product) => {
                 map[product.id] = product;
                 return map;
             }, {});
     
-            // Map carts with product details
             const cartsWithProductDetails = carts.map(cart => {
                 return {
                     username: cart.username,
                     status: cart.status,
-                    product: productMap[cart.productID] || null // Attach product details or null
+                    product: productMap[cart.productID] || null 
                 };
             });
     
-            // Render the list-carts.ejs view with the mapped data
             res.render('list-carts', { carts: cartsWithProductDetails });
         } catch (error) {
             console.error('Error fetching carts or products:', error);
@@ -372,7 +366,7 @@ app.get('/shopping-cart', async (req, res) => {
             for (const cart of carts) {
                 const product = await Product.findOne({ id: cart.productID });
                 if (product) {
-                    products.push(product); // Dodaj tylko istniejące produkty
+                    products.push(product); 
                 } else {
                     console.warn(`Produkt o ID ${cart.productID} nie został znaleziony.`);
                 }
@@ -422,7 +416,6 @@ app.post('/cart/add', async (req, res) => {
     }
 });
 
-// Usuwanie produktu z koszyka
 app.post('/shopping-cart/delete', async (req, res) => {
     const { id } = req.body;
 
@@ -447,10 +440,9 @@ app.post('/shopping-cart/checkout', async (req, res) => {
     }
 
     try {
-        // Aktualizacja statusu wszystkich produktów w koszyku użytkownika
         const result = await Cart.updateMany(
-            { username: login, status: 'IN CART' }, // Znajdź produkty z koszyka
-            { $set: { status: 'IN ORDER' } }       // Ustaw status na "IN ORDER"
+            { username: login, status: 'IN CART' }, 
+            { $set: { status: 'IN ORDER' } }       
         );
 
         if (result.modifiedCount === 0) {
@@ -470,11 +462,10 @@ app.post('/shopping-cart/checkout', async (req, res) => {
 app.get('/shop', async (req, res) => {
     try {
         const { login, role } = req.cookies;
-        const searchQuery = req.query.search || ''; // Pobierz parametr wyszukiwania
-        const sortQuery = req.query.sort || ''; // Pobierz parametr sortowania
-        const regex = new RegExp(searchQuery, 'i'); // Wyrażenie regularne do wyszukiwania
+        const searchQuery = req.query.search || '';
+        const sortQuery = req.query.sort || ''; 
+        const regex = new RegExp(searchQuery, 'i'); 
         const sortOption = sortQuery === 'ascending' ? { price: 1 } : sortQuery === 'descending' ? { price: -1 } : {};
-        // Znajdź produkty, które pasują do wyszukiwania, i posortuj je
         const products = await Product.find({
             $or: [
                 { name: regex },
@@ -498,15 +489,15 @@ app.get('/shop', async (req, res) => {
 
 app.get('/product/:id', async (req, res) => {
     try {
-        const productId = req.params.id; // Pobierz ID produktu z URL
-        const product = await Product.findOne({ id: productId }); // Znajdź produkt w bazie danych
+        const productId = req.params.id; 
+        const product = await Product.findOne({ id: productId }); 
 
         if (!product) {
             return res.status(404).send('Produkt nie został znaleziony');
         }
 
-        const { login } = req.cookies; // Pobierz login z ciasteczek
-        res.render('product_page', { product, login }); // Przekaż dane produktu i login do widoku
+        const { login } = req.cookies; 
+        res.render('product_page', { product, login }); 
     } catch (error) {
         console.error('Błąd podczas ładowania produktu:', error);
         res.status(500).send('Wystąpił błąd podczas ładowania produktu.');
@@ -518,14 +509,14 @@ app.get('/product/:id', async (req, res) => {
 
 
 app.post('/logout', (req, res) => {
-    res.clearCookie('login'); // Usuwa ciasteczko login
-    res.clearCookie('role'); // Usuwa ciasteczko rola
-    res.redirect('/shop'); // Przekierowanie na stronę sklepu
+    res.clearCookie('login'); 
+    res.clearCookie('role'); 
+    res.redirect('/shop'); 
 });
 
 
 http.createServer(app).listen(3000);
 console.log("started");
 
-// monogod --dbpath TwojaKolekcja
+// monogod --dbpath "./data/mongodb"
 // monogosh
